@@ -6,11 +6,18 @@ output: pdf_document
 ---
 # Step 1: Get the data
 Download from website https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz
-
 Easiest to unzip locally then read in the data as a csv file.
 
-flights <- read.csv('data/flights.csv')
+flights <- read.csv('downloads/flights.csv')
+
+# Step 2: Initial EDA
+Are there any null values?
+
+Isolate the data you want to use.  We recommend 
 
 
-##Get the data
+# Question 1: Get the Data to fit TimeSeries
 
+# Question 2: Make an inital Visualization
+
+# Question 3: Smoothing
