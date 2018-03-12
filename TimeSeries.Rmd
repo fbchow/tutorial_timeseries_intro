@@ -4,7 +4,13 @@ author: "Michael McCormack"
 date: "March 12, 2018"
 output: pdf_document
 ---
+# Step 1: Get the data
+Download from website https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz
+
+Easiest to unzip locally then read in the data as a csv file.
+
+flights <- read.csv('data/flights.csv')
+
 
 ##Get the data
-data <- flights <- read.csv(textConnection(readLines(gzcon(url('https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz')))))
 
