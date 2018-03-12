@@ -1,5 +1,5 @@
 ---
-title: "TimeSeries"
+title: "TimeSeries Skeleton"
 author: "Michael McCormack"
 date: "March 12, 2018"
 output: pdf_document
@@ -17,13 +17,6 @@ Are there any null values?
 
 Isolate the data you want to use.  We recommend using arrival delay and departure delay times.  Or Origin/Destination cities.  Or Aggregate by Carrier
 
-
-arr_delay <- flights %>% arrange(FL_DATE) %>% group_by(FL_DATE) %>% summarise(mean(ARR_DELAY, na.rm = TRUE))
-names(arr_delay) <- c('FL_DATE', 'AVE_DELAY')
-
-dep_delay <- flights %>% arrange(FL_DATE) %>% group_by(FL_DATE) %>% summarise(mean(DEP_DELAY, na.rm = TRUE))
-names(dep_delay) <- c('FL_DATE', 'AVE_DELAY')
-#
 
 # Question 1: Get the appropriate Data to fit TimeSeries
 
