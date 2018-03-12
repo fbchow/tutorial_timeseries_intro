@@ -4,29 +4,85 @@ author: "Michael McCormack"
 date: "March 12, 2018"
 output: pdf_document
 ---
-require(tidyverse)
-
-# Step 1: Get the data
+```{r}
+suppressMessages(require(tidyverse))
+require(ggfortify)
+require(forecast)
+```
+## Step 1: Get the data
 Download from website https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz
 Easiest to unzip locally then read in the data as a csv file.
-
-flights <- read.csv('downloads/flights.csv')
-
-# Step 2: Initial EDA
+```{r}
+flights <- read.csv('flights.csv')
+```
+## Step 2: Initial EDA
 Are there any null values?
 
-Isolate the data you want to use.  We recommend using arrival delay and departure delay times.  Or Origin/Destination cities.  Or Aggregate by Carrier
+Isolate the data you want to use.  We recommend using arrival delay and departure delay times.  Or Origin/Destination cities.  Or Aggregate by Carrier.
 
-
+```{r}
 arr_delay <- flights %>% arrange(FL_DATE) %>% group_by(FL_DATE) %>% summarise(mean(ARR_DELAY, na.rm = TRUE))
 names(arr_delay) <- c('FL_DATE', 'AVE_DELAY')
 
 dep_delay <- flights %>% arrange(FL_DATE) %>% group_by(FL_DATE) %>% summarise(mean(DEP_DELAY, na.rm = TRUE))
 names(dep_delay) <- c('FL_DATE', 'AVE_DELAY')
-#
+```
 
-# Question 1: Get the appropriate Data to fit TimeSeries
+## Step 3: Fit the data to a TimeSeries object and plot
+Refer to the slides for tips on how to do this.
+```{r}
+arr_delay_ts <- as.ts(arr_delay)
+dep_delay_ts <- as.ts(dep_delay)
+```
+## Step 4: Use TimeSeries object data to make an initial Visualization  
+Create a basic Visualization of the TimeSeries object data
 
-# Question 2: Make an inital Visualization
+```{r}
+plot(as.ts(arr_delay$AVE_DELAY))
+plot(as.ts(dep_delay$AVE_DELAY))
 
-# Question 3: Smoothing
+### Advanced Portion
+autoplot(as.ts(arr_delay$AVE_DELAY))# + geom_line()
+```
+# Dive in Deeper to TimeSeries
+For this portion of our lab we will be using data from the AirPassengers Dataset
+```{r}
+data(AirPassengers)
+```
+## Step 5: Make an inital TimeSeries Visual of the data
+```{r}
+timeserie_air = AirPassengers
+plot(as.ts(timeserie_air))
+```
+## Step 6: Compute the Moving Average of this data and vizualize this
+```{r}
+trend_air = ma(timeserie_air, order = 12, centre = T)
+#lines(trend_air)
+plot(as.ts(trend_air))
+```
+## Step 7: Remove the Trend from the data and Visualize this
+```{r}
+detrend_air = timeserie_air / trend_air
+plot(as.ts(detrend_air))
+```
+## Step 8: Create a decomposition of the data by month
+-- Hint (Frequency = 12)
+```{r}
+ts_air = ts(timeserie_air, frequency = 12)
+decompose_air = decompose(ts_air, "multiplicative")
+ 
+plot(decompose_air) 
+
+### Advanced answers
+plot(as.ts(decompose_air$seasonal))
+plot(as.ts(decompose_air$trend))
+plot(as.ts(decompose_air$random))
+```
+## Step 9: Create your own simple moving average for monthly data
+```{r}
+moving_ave <- function(x,n=5){stats::filter(x,rep(1/n,n), sides=2)}
+
+trend <- moving_ave(as.ts(arr_delay$AVE_DELAY),30)
+plot(as.ts(arr_delay$AVE_DELAY))
+plot(trend)
+```

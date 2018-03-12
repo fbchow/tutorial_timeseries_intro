@@ -3,23 +3,60 @@ title: "TimeSeries Skeleton"
 author: "Michael McCormack"
 date: "March 12, 2018"
 output: pdf_document
----
-require(tidyverse)
 
-# Step 1: Get the data
+---
+
+require(tidyverse)
+require(ggfortify)
+require(forecast)
+
+
+## Step 1: Get the data
 Download from website https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz
 Easiest to unzip locally then read in the data as a csv file.
-
-flights <- read.csv('downloads/flights.csv')
-
-# Step 2: Initial EDA
+```{r}
+flights <- read.csv('flights.csv')
+```
+## Step 2: Initial EDA
 Are there any null values?
 
 Isolate the data you want to use.  We recommend using arrival delay and departure delay times.  Or Origin/Destination cities.  Or Aggregate by Carrier
 
 
-# Question 1: Get the appropriate Data to fit TimeSeries
+## Step 3: Fit the data to a TimeSeries object.
+Refer to the slides for tips on how to do this.
 
-# Question 2: Make an inital Visualization
 
-# Question 3: Smoothing
+## Step 4: Use TimeSeries object data to make an initial Visualization  
+Create a basic Visualization of the TimeSeries object data
+
+###Advanced 
+See if you can figure out how to do this in ggplot
+-hint the function is called autoplot and is part of ggfortify.
+
+
+
+# Dive in Deeper to TimeSeries
+For this portion of our lab we will be using data from the AirPassengers Dataset
+
+```{r}
+data(AirPassengers)
+```
+## Step 5: Make an inital TimeSeries Visual of the AirPassenger Data
+
+## Step 6: Compute the Moving Average of this data and visualize this
+
+## Step 7: Remove the Trend from the data and visualize this
+
+## Step 8: Create a decomposition of the data by month
+-- Hint (Frequency = 12), use the decompose function,  and remember this is multiplicative
+
+###Advanced: Visually isolate certain parts of the graph
+How would you only represent the random graph.
+
+## Step 9: Create your own simple moving average for monthly data
+Hint - A good starting place is StackOverFlow
+https://stackoverflow.com/questions/743812/calculating-moving-average
+
+
+
