@@ -1,0 +1,10 @@
+---
+title: "TimeSeries"
+author: "Michael McCormack"
+date: "March 12, 2018"
+output: pdf_document
+---
+
+##Get the data
+data <- flights <- read.csv(textConnection(readLines(gzcon(url('https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz')))))
+
