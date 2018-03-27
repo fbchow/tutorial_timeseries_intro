@@ -1,21 +1,25 @@
 ---
 title: "TimeSeries Skeleton"
-author: "Michael McCormack"
+author: "Fanny Chow"
 date: "March 12, 2018"
-output: pdf_document
-
+output:
+  html_document:
+    df_print: paged
 ---
-```{r}
-suppressMessages(require(tidyverse))
-require(reshape2)
-require(ggfortify)
-require(forecast)
+```{r, include = FALSE}
+suppressMessages(library(tidyverse))
+library(reshape2)
+library(ggfortify)
+library(forecast)
 ```
 ## Step 1: Get the data.  
 Download from website https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz
 Easiest to unzip locally then read in the data as a csv file (hint: read.table() is typically faster than read.csv)  
 ```{r}
-
+library(data.table)
+library(here)
+flights.path <- here("flights.csv")
+flights <- read.table(flights.path, header = TRUE, sep=',')
 ```
 ## Step 2: Prepare the data.  
 
@@ -25,6 +29,11 @@ Time series data needs to be over a regular time interval. Calculate the average
 
 
 ```{r}
+# aggregate(DEP_DELAY~DAY_OF_WEEK, data = flights, mean)
+# mean.dept.delay <- tapply(flights$FL_DATE, flights$DEP_DELAY, mean, na.rm=TRUE)
+
+mean.dept.delay <- flights %>% group_by(factor(FL_DATE)) %>%
+   summarize(average.delay = mean(DEP_DELAY, na.rm = TRUE))
 
 ```
 
@@ -34,14 +43,15 @@ If you like, compare average delay times for different carriers or different air
 ## Step 3: Create a ts object of the data.  
 Refer to the slides for tips on how to do this.
 ```{r}
-
+mean.dept.delay <- ts(mean.dept.delay$average.delay)
+str(mean.dept.delay)
 ```
 
 ## Step 4: Plot the time series using base package and ggplot (advanced).
-Create a basic visualization of the time ser
+Create a basic visualization of the time series  
 
 ```{r}
-
+plot(mean.dept.delay, main="Avg Departure Delay for 2017", ylab="avg departure delay (min.)")
 ```
 
 ## Step 5: Smooth the data to reduce noise and identify trends.
@@ -53,7 +63,18 @@ __Hints__
 * watch out for functions that may have been masked by other packages
 * ggplot: may need to convert data to long format to plot mutliple series  
 
+Let's say there are 31 days per month for the window size.  
+1/n creates intervals. So say if you had quarterly data, we would bin it into 1/4 reps.  
 ```{r}
+# n = window size
+ma <- function(x,n=5){stats::filter(x,rep(1/n,n), sides=2)}
+
+moving.average <- ma(mean.dept.delay$average.delay, 31)
+plot(moving.average, ylab="Moving Average", main="Moving Average of Departure Times in 2017")
+# autoplot(moving.average)
+
+# apply(mean.dept.delay, ma)
+
 
 ```
 
@@ -65,14 +86,17 @@ __Questions__
 ### Advanced: Smooth the same data using Local Regression (loess). Plot smoothed data using base package. Plot all three series (original, smoothed by MA, and smoothed by loess) using ggplot (advanced).
 
 __Hint__  
-* loess() requires all predictors to be numerical so dates cannot be used  
+* loess() librarys all predictors to be numerical so dates cannot be used  
 
 Try different values for the span argument and see how it affects the amount of smoothing.  
 
 ```{r}
-
+names(mean.dept.delay) <- c('FL_DATE', 'average.delay')
+lowess.index <- seq(1:nrow(mean.dept.delay))
+mean.dept.delay <- cbind(mean.dept.delay, lowess.index)
+                    
+loess(average.delay~lowess.index, data=mean.dept.delay, span = 1/31)
 ```
-
 
 
 # Dive in Deeper to TimeSeries  
