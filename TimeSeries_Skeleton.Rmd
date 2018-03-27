@@ -13,7 +13,8 @@ library(ggfortify)
 library(forecast)
 ```
 ## Step 1: Get the data.  
-Download from website https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz
+Download from website
+
 Easiest to unzip locally then read in the data as a csv file (hint: read.table() is typically faster than read.csv)  
 ```{r}
 library(data.table)
