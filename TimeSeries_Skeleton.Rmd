@@ -1,8 +1,9 @@
 ---
 title: "TimeSeries Skeleton"
-author: "Fanny Chow"
+author: "Fanny Chow, Michael McCormack"
 date: "March 12, 2018"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -11,14 +12,17 @@ suppressMessages(library(tidyverse))
 library(reshape2)
 library(ggfortify)
 library(forecast)
+library(data.table)
+library(here)
+
+
 ```
 ## Step 1: Get the data.  
-Download from website
+Download from website https://cdn.rawgit.com/mikejt33/DataViz/246c2026/data/flights.csv.gz
+Easiest to unzip locally then read in the data as a csv file (hint: read.table() is typically faster than read.csv)
 
 Easiest to unzip locally then read in the data as a csv file (hint: read.table() is typically faster than read.csv)  
 ```{r}
-library(data.table)
-library(here)
 flights.path <- here("flights.csv")
 flights <- read.table(flights.path, header = TRUE, sep=',')
 ```
@@ -26,16 +30,24 @@ flights <- read.table(flights.path, header = TRUE, sep=',')
 
 *Are there any null values?
 
-Time series data needs to be over a regular time interval. Calculate the average departure delay time and/or average arrival delay time for each day of 2017.
+Time series data needs to be over a regular time interval. Calculate the average departure delay time and/or average arrival delay time for each day of 2017.  
+
+Note the number of NA null values.  
+```{r}
+str(flights)
+```
 
 
 ```{r}
 # aggregate(DEP_DELAY~DAY_OF_WEEK, data = flights, mean)
 # mean.dept.delay <- tapply(flights$FL_DATE, flights$DEP_DELAY, mean, na.rm=TRUE)
 
-mean.dept.delay <- flights %>% group_by(factor(FL_DATE)) %>%
-   summarize(average.delay = mean(DEP_DELAY, na.rm = TRUE))
+mean.dept.delay <- flights %>% 
+  arrange(FL_DATE) %>% 
+  group_by(factor(FL_DATE)) %>%
+  summarise(mean(DEP_DELAY, na.rm = TRUE))
 
+names(mean.dept.delay) <- c('FL_DATE', 'AVE_DELAY')
 ```
 
 If you like, compare average delay times for different carriers or different airports by creating multiple time series.
@@ -44,15 +56,15 @@ If you like, compare average delay times for different carriers or different air
 ## Step 3: Create a ts object of the data.  
 Refer to the slides for tips on how to do this.
 ```{r}
-mean.dept.delay <- ts(mean.dept.delay$average.delay)
-str(mean.dept.delay)
+mean.dept.delay.ts <- ts(mean.dept.delay$AVE_DELAY)
+# str(mean.dept.delay)
 ```
 
 ## Step 4: Plot the time series using base package and ggplot (advanced).
 Create a basic visualization of the time series  
 
 ```{r}
-plot(mean.dept.delay, main="Avg Departure Delay for 2017", ylab="avg departure delay (min.)")
+plot(mean.dept.delay.ts, main="Avg Departure Delay for 2017", ylab="avg departure delay (min.)")
 ```
 
 ## Step 5: Smooth the data to reduce noise and identify trends.
@@ -70,19 +82,39 @@ Let's say there are 31 days per month for the window size.
 # n = window size
 ma <- function(x,n=5){stats::filter(x,rep(1/n,n), sides=2)}
 
-moving.average <- ma(mean.dept.delay$average.delay, 31)
-plot(moving.average, ylab="Moving Average", main="Moving Average of Departure Times in 2017")
-# autoplot(moving.average)
+moving.average <- ma(mean.dept.delay.ts, 31)
 
-# apply(mean.dept.delay, ma)
+plot(moving.average, ylab="Moving Average", main="Moving Average of Departure Times in 2017")
+
+autoplot(moving.average)
 
 
 ```
 
-__Questions__  
-1. How does the neighborhood size, i.e. the number of points in each localized subset, affect the amount of smoothing?  
-2. What happened to endpoints of the smoothed data?  
 
+```{r}
+# generate dates to make plots more legible
+dates <- seq(as.Date('2017-01-01'), as.Date('2017-12-31'), by = 'day') # create sequence of dates
+plot.ts <- data.frame(smoothed_MA = moving.average, ave_delay=as.numeric(mean.dept.delay.ts),date=dates)
+
+```
+
+```{r}
+# melt into long format 
+# plot both the original and smoothed data can be easily plotted on the same axes
+plot.ts.melted <- melt(plot.ts, id='date')
+
+ggplot(plot.ts.melted) + geom_line(aes(x = date, y  = value, col = variable)) + labs(x = 'Date', y = 'Average arrival delay (minutes)', title='Smoothed vs MA Delay') + theme_minimal() 
+
+```
+
+__Questions__  
+1. How does the neighborhood size, i.e. the number of points in each localized subset, affect the amount of smoothing?   
+
+When you increase the window size, you have more smoothing.  
+
+2. What happened to endpoints of the smoothed data?  
+You lose the first and last endpoints. You cannot intialize a subset of calculating the MA at those points, so they're set to NA.  
 
 ### Advanced: Smooth the same data using Local Regression (loess). Plot smoothed data using base package. Plot all three series (original, smoothed by MA, and smoothed by loess) using ggplot (advanced).
 
@@ -92,16 +124,42 @@ __Hint__
 Try different values for the span argument and see how it affects the amount of smoothing.  
 
 ```{r}
-names(mean.dept.delay) <- c('FL_DATE', 'average.delay')
-lowess.index <- seq(1:nrow(mean.dept.delay))
-mean.dept.delay <- cbind(mean.dept.delay, lowess.index)
+# names(mean.dept.delay) <- c('FL_DATE', 'average.delay')
+
+# lowess.index <- seq(1:nrow(mean.dept.delay))
+mean.dept.delay$index <- 1:nrow(mean.dept.delay)
+
+# mean.dept.delay <- cbind(mean.dept.delay, lowess.index)
                     
-loess(average.delay~lowess.index, data=mean.dept.delay, span = 1/31)
+loess.model <- loess(AVE_DELAY~index, data=mean.dept.delay, span = 1/31)
+
+```
+
+```{r}
+# smooth the data by using the predict() function
+trend.loess <- predict(loess.model)
+
+# plot the smoothed data using base package
+plot(trend.loess)
+```
+
+```{r}
+# plot using ggplot
+
+# creating data frame with dates to improve readability of plots
+plot_ts <- cbind(plot.ts, smoothed.loess = trend.loess)
+
+# melt into long format so both the origininal and smoothed data can be plotted on the same axes
+plot.ts.melted <- melt(plot.ts, id='date')
+
+ggplot(plot.ts.melted) + geom_line(aes(x = date, y  = value, col = variable)) + labs(x = 'Date', y = 'Average arrival delay (minutes)') 
 ```
 
 
-# Dive in Deeper to TimeSeries  
 
+
+
+# Dive in Deeper to TimeSeries  
 For this portion of our lab we will be using data from the AirPassengers Dataset  
 
 ```{r}
@@ -110,21 +168,36 @@ data(AirPassengers)
 
 ## Step 6: Make an inital TimeSeries Visual of the data  
 ```{r}
-
+timeseries_air = AirPassengers
+plot(as.ts(timeseries_air))
 ```
+
 ## Step 7: Compute the Moving Average of this data using forecast package and vizualize this  
 ```{r}
-
+trend_air = ma(timeseries_air)
+               # , order = 12, centre = T)
+#lines(trend_air)
+plot(as.ts(trend_air))
 ```
 ## Step 8: Remove the Trend from the data and Visualize this  
 ```{r}
-
+detrend_air = timeseries_air / trend_air
+plot(as.ts(detrend_air))
 ```
 ## Step 9: Create a decomposition of the data by month  
 -- Hint (Frequency = 12)
 ```{r}
+ts_air = ts(timeseries_air, frequency = 12)
+decompose_air = decompose(ts_air, "multiplicative")
+ 
+plot(decompose_air) 
 
+### Advanced answers
+plot(as.ts(decompose_air$seasonal))
+plot(as.ts(decompose_air$trend))
+plot(as.ts(decompose_air$random))
 ```
+
 
 
 
